@@ -1,24 +1,65 @@
 import React, { useState } from 'react';
-import { View, Image } from 'react-native';
+import { View, Image, ToastAndroid } from 'react-native';
 import { Button, TextInput, Text } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
+import fetchServices from '../services/fetchServices';
 
 const SignupScreen = () => {
   const navigation = useNavigation();
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [repassword, setRepassword] = useState('');
   const [passwordVisibility, setPasswordVisibility] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState(false);
 
-  const handleSignup = () => {
+  const showToast = (message = "Something went wrong") => {
+    ToastAndroid.show(message, 3000);
+  };
+
+  const handleSignup = async () => {
     console.log('Signup with:', {
-      firstName,
-      lastName,
+      name,
       email,
       password,
     });
-    // Add signup logic here
+    
+    try{
+      setLoading(true);
+
+      if(name === "" || email === "" || password === "" || repassword === "") {
+        showToast("Please input required data");
+        setErrors(true);
+        return false;
+      }
+
+      if(password !== repassword) {
+        showToast("Password doesn't match");
+        setErrors(true);
+        return false;
+      }
+
+      const url = "http://192.168.137.1/api/v1/register";
+      const data = {
+        name,
+        email,
+        password,
+        password_confirmation: repassword,
+      };
+
+      const result = await fetchServices.postData(url, data);
+      console.log("Response:", result);
+      if (result?.message != null) {
+        showToast(result?.message);
+      } else {
+        navigation.navigate('Home');
+      }
+    } catch (e) {
+      showToast(e.toString());
+    } finally {
+      setLoading(false);
+    }
 
     navigation.navigate('Login');
   };
@@ -56,46 +97,58 @@ const SignupScreen = () => {
       </Text>
 
       <TextInput
-        value={firstName}
-        placeholder="First Name"
+        value={name}
+        onChangeText={setName}
+        placeholder="Full Name"
         placeholderTextColor="white"
         underlineColor="white"
         textColor="white"
-        onChangeText={(text) => setFirstName(text)}
-        style={{ marginBottom: 10, backgroundColor: '#1DA1F2' }}
-        theme={{ colors: { primary: 'white', text: 'white', underlineColor: 'white' } }}
-      />
-
-      <TextInput
-        value={lastName}
-        placeholder="Last Name"
-        placeholderTextColor="white"
-        underlineColor="white"
-        textColor="white"
-        onChangeText={(text) => setLastName(text)}
+        error={errors}
         style={{ marginBottom: 10, backgroundColor: '#1DA1F2' }}
         theme={{ colors: { primary: 'white', text: 'white', underlineColor: 'white' } }}
       />
 
       <TextInput
         value={email}
+        onChangeText={setEmail}
         placeholder="Email"
         placeholderTextColor="white"
         underlineColor="white"
         textColor="white"
-        onChangeText={(text) => setEmail(text)}
+        error={errors}
         style={{ marginBottom: 10, backgroundColor: '#1DA1F2' }}
         theme={{ colors: { primary: 'white', text: 'white', underlineColor: 'white' } }}
       />
 
       <TextInput
         value={password}
-        onChangeText={(text) => setPassword(text)}
+        onChangeText={setPassword}
         secureTextEntry={!passwordVisibility}
         placeholder="Password"
         placeholderTextColor="white"
         underlineColor="white"
         textColor="white"
+        error={errors}
+        style={{ marginBottom: 10, backgroundColor: '#1DA1F2' }}
+        theme={{ colors: { primary: 'white', text: 'white', underlineColor: 'white' } }}
+        right={
+          <TextInput.Icon
+            icon={passwordVisibility ? 'eye' : 'eye-off'}
+            onPress={() => setPasswordVisibility(!passwordVisibility)}
+            color="white"
+          />
+        }
+      />
+
+      <TextInput
+        value={repassword}
+        onChangeText={setRepassword}
+        secureTextEntry={!passwordVisibility}
+        placeholder="Re-type Password"
+        placeholderTextColor="white"
+        underlineColor="white"
+        textColor="white"
+        error={errors}
         style={{ marginBottom: 10, backgroundColor: '#1DA1F2' }}
         theme={{ colors: { primary: 'white', text: 'white', underlineColor: 'white' } }}
         right={
@@ -109,6 +162,8 @@ const SignupScreen = () => {
 
       <Button
         mode="contained"
+        disabled={loading}
+        loading={loading}
         onPress={handleSignup}
         style={{ marginBottom: 10, backgroundColor: 'white' }}
         labelStyle={{ color: '#1DA1F2' }}
@@ -118,6 +173,7 @@ const SignupScreen = () => {
 
       <Button
         mode="text"
+        disabled={loading}
         onPress={() => navigation.navigate('Login')}
         style={{ alignSelf: 'center' }}
         labelStyle={{ color: 'white' }}
