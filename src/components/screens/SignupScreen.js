@@ -40,7 +40,7 @@ const SignupScreen = () => {
         return false;
       }
 
-      const url = "http://192.168.137.1/api/v1/register";
+      const url = "http://127.0.0.1:8000/api/v1/register";
       const data = {
         name,
         email,
